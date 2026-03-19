@@ -9,21 +9,25 @@ end = dt.date(2024, 12, 31)
 configs = [
     {
         'signal_expr': reversal,
-        'gamma': 50,
+        'gamma': 129,
+        'constraints': ["ZeroBeta", "ZeroInvestment"]
     },
     {
         'signal_expr': momentum,
-        'gamma': 50,
+        'gamma': 43,
+        'constraints': ["ZeroBeta", "ZeroInvestment"]
     },
     {
         'signal_expr': bab,
-        'gamma': 50,
+        'gamma': 37,
+        'constraints': ["ZeroInvestment"]
     },
 ]
 
 for config in configs:
     signal_expr = config['signal_expr']
     gamma = config['gamma']
+    constraints = config['constraints']
     signal_name = signal_expr.__name__
 
     alphas = get_alphas(start, end, signal_expr())
@@ -36,5 +40,6 @@ for config in configs:
     run_backtest(
         signal_name=signal_name,
         alpha_file_path=file_path,
-        gamma=gamma
+        gamma=gamma,
+        constraints=constraints
     )

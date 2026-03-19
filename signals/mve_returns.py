@@ -49,7 +49,7 @@ def get_alphas(start: dt.date, end: dt.date, signal_expr: pl.Expr) -> pl.DataFra
 
     return filtered
 
-def run_backtest(signal_name: str, alpha_file_path: str, gamma: int):
+def run_backtest(signal_name: str, alpha_file_path: str, gamma: int, constraints: list[str]):
     slurm_config = SlurmConfig(
         n_cpus=8,
         mem="32G",
@@ -64,7 +64,7 @@ def run_backtest(signal_name: str, alpha_file_path: str, gamma: int):
         data_path=alpha_file_path,
         project_root="/home/amh1124/Projects/sf-signal-combination",
         byu_email="amh1124@byu.edu",
-        constraints=["ZeroBeta", "ZeroInvestment"],
+        constraints=constraints,
         slurm=slurm_config,
     )
 

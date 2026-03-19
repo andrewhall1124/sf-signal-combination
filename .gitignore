@@ -13,3 +13,4 @@ wheels/
 /data
 /weights
 /logs
+core.*
