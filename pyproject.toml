@@ -3,7 +3,7 @@ name = "sf-signal-combination"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
-requires-python = ">=3.14"
+requires-python = ">=3.13, <3.14"
 dependencies = [
     "matplotlib>=3.10.8",
     "numpy>=2.4.3",
@@ -12,5 +12,6 @@ dependencies = [
     "polars-ols>=0.3.5",
     "pyarrow>=23.0.1",
     "seaborn>=0.13.2",
-    "sf-quant>=0.1.3",
+    "sf-backtester>=0.1.1",
+    "sf-quant>=0.2.1",
 ]
