@@ -36,7 +36,7 @@ for t in range(WINDOW, len(R_full)):
     X = R_full[t - WINDOW : t]
     y = X.sum(axis=1)
 
-    # Posterior parameters (Normal-Inverse-Gamma conjugate update)
+    # Posterior parameters (Normal-Normal conjugate update)
     XtX = X.T @ X
     Xty = X.T @ y
     Lambda_n = Lambda_0 + XtX
