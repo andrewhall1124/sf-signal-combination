@@ -18,9 +18,13 @@ def get_assets_data(start: dt.date, end: dt.date) -> pl.DataFrame:
                 'predicted_beta',
             ]
         )
+        .sort('date', 'barrid')
         .with_columns(
             pl.col('return') / 100,
             pl.col('specific_return') / 100,
             pl.col('specific_risk') / 100,
+        )
+        .with_columns(
+            pl.col('return').shift(-1).over('barrid').alias('forward_return')
         )
     )

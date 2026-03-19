@@ -67,13 +67,15 @@ save_stackplot(
     signal_weights['w_momentum'],
     signal_weights['w_bab'],
     labels=['Reversal', 'Momentum', 'BAB'],
-    file_path=folder_path / "stackplot.png"
+    file_path=folder_path / "stackplot.png",
+    title="Orthogonal Sharpe",
 )
 
 save_lineplot(
     weights=signal_weights,
     columns=['w_reversal', 'w_momentum', 'w_bab'],
     labels=['Reversal', 'Momentum', 'BAB'],
-    file_path=folder_path / "lineplot.png"
+    file_path=folder_path / "lineplot.png",
+    title="Orthogonal Sharpe",
 )
 
