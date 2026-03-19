@@ -3,6 +3,7 @@ from signals.utils import get_assets_data
 import datetime as dt
 from signals.expr import momentum
 from sf_backtester import BacktestRunner, BacktestConfig, SlurmConfig
+from pathlib import Path
 
 def get_alphas(start: dt.date, end: dt.date, signal_expr: pl.Expr) -> pl.DataFrame:
     assets = get_assets_data(start, end)
@@ -36,8 +37,6 @@ def get_alphas(start: dt.date, end: dt.date, signal_expr: pl.Expr) -> pl.DataFra
         )
     )
 
-    print(alphas)
-
     filtered = (
         alphas
         .filter(
@@ -48,7 +47,7 @@ def get_alphas(start: dt.date, end: dt.date, signal_expr: pl.Expr) -> pl.DataFra
         .sort('date', 'barrid')
     )
 
-    print(filtered)
+    return filtered
 
 def run_backtest(signal_name: str, alpha_file_path: str, gamma: int):
     slurm_config = SlurmConfig(
@@ -63,19 +62,12 @@ def run_backtest(signal_name: str, alpha_file_path: str, gamma: int):
         signal_name=signal_name,
         gamma=gamma,
         data_path=alpha_file_path,
-        project_root="/home/amh1124/Projects/",
+        project_root="/home/amh1124/Projects/sf-signal-combination",
         byu_email="amh1124@byu.edu",
         constraints=["ZeroBeta", "ZeroInvestment"],
         slurm=slurm_config,
     )
 
     runner = BacktestRunner(config)
-
-    # Preview the sbatch script
-    print(runner.dry_run())
-
-    # Submit to SLURM
     runner.submit()
-
-if __name__ == '__main__':
-    print(get_alphas(dt.date(2000, 1, 1), dt.date(2024, 12, 31), momentum()))
+    
