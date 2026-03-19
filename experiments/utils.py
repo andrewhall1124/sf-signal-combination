@@ -16,6 +16,7 @@ def save_lineplot(weights: pl.DataFrame, columns: list[str], labels: list[str], 
     for column, label in zip(columns, labels):
         sns.lineplot(weights, x='date', y=column, label=label)
     plt.title(title)
+    plt.ylim(0, 1)
     plt.ylabel("Weights")
     plt.xlabel(None)
     plt.legend(loc="upper right")
