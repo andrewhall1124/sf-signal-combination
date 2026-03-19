@@ -21,7 +21,7 @@ returns = (
     .sort('date')
 )
 
-# Compute signal weights using QR factorization on a rolling window
+# Compute signal weights using analytical MVE on a rolling window
 dates = returns['date'].to_list()
 R_full = returns.select(signal_names).to_numpy()
 
@@ -29,29 +29,25 @@ rows = []
 for t in range(WINDOW, len(R_full)):
     R_window = R_full[t - WINDOW : t]
 
-    Q, _ = np.linalg.qr(R_window)
+    mu = R_window.mean(axis=0)
+    Sigma = np.cov(R_window, rowvar=False)
 
-    means = Q.mean(axis=0)
-    stds = Q.std(axis=0, ddof=1)
-    sharpes = means / stds
+    weights = np.linalg.solve(Sigma, mu)
 
-    # Normalize sharpes
-    sharpes = sharpes / sharpes.sum()
-    # Softmax weights
-    exp_s = np.exp(sharpes)
+    # Normalize
+    weights = weights / weights.sum()
+
+    # Softmax
+    exp_s = np.exp(weights)
     weights = exp_s / exp_s.sum()
 
     rows.append(
-        {
-            'date': dates[t]
-        } 
-        | 
-        {
-            f'w_{name}': weights[i]
-            for i, name in enumerate(signal_names)
-        }
+        {'date': dates[t]}
+        |
+        {f'w_{name}': weights[i] for i, name in enumerate(signal_names)}
     )
 
+# Combine and smooth weights
 signal_weights = pl.DataFrame(rows)
 signal_weights = (
     signal_weights
@@ -61,6 +57,7 @@ signal_weights = (
     )
 )
 
+# Save results
 folder_path = Path("results/orthogonal_sharpe")
 folder_path.mkdir(exist_ok=True, parents=True)
 
