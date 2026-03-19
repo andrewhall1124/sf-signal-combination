@@ -1,0 +1,16 @@
+[project]
+name = "sf-signal-combination"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "matplotlib>=3.10.8",
+    "numpy>=2.4.3",
+    "pandas>=3.0.1",
+    "polars>=1.39.2",
+    "polars-ols>=0.3.5",
+    "pyarrow>=23.0.1",
+    "seaborn>=0.13.2",
+    "sf-quant>=0.1.3",
+]
