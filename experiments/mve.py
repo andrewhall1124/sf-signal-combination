@@ -58,7 +58,7 @@ signal_weights = (
 )
 
 # Save results
-folder_path = Path("results/orthogonal_sharpe")
+folder_path = Path("results/mve")
 folder_path.mkdir(exist_ok=True, parents=True)
 
 save_stackplot(
@@ -68,7 +68,7 @@ save_stackplot(
     signal_weights['w_bab'],
     labels=['Reversal', 'Momentum', 'BAB'],
     file_path=folder_path / "stackplot.png",
-    title="Orthogonal Sharpe",
+    title="MVE",
 )
 
 save_lineplot(
@@ -76,6 +76,6 @@ save_lineplot(
     columns=['w_reversal', 'w_momentum', 'w_bab'],
     labels=['Reversal', 'Momentum', 'BAB'],
     file_path=folder_path / "lineplot.png",
-    title="Orthogonal Sharpe",
+    title="MVE",
 )
 

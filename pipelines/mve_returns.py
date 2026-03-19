@@ -30,18 +30,18 @@ for config in configs:
         )
         .group_by('date')
         .agg(
-            pl.col('forward_return').mul(pl.col('weight')).sum()
+            pl.col('forward_return').mul(pl.col('weight')).sum().alias('return')
         )
         .sort('date')
     )
 
     # Diagnostic
-    volatility = portfolio_returns['forward_return'].std() * np.sqrt(252)
+    volatility = portfolio_returns['return'].std() * np.sqrt(252)
     print(f"{signal_name}:")
     print(f"    Volatility (%): {volatility:2%}")
 
     # Save returns
-    file_path = Path(f"data/mve_returns/f{signal_name}.parquet")
+    file_path = Path(f"data/mve_returns/{signal_name}.parquet")
     file_path.parent.mkdir(parents=True, exist_ok=True)
 
     portfolio_returns.write_parquet(file_path)
