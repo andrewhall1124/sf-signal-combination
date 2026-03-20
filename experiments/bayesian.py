@@ -50,7 +50,7 @@ for t in range(WINDOW, len(returns_np)):
     mu_normalized = mu_n / mu_n.sum()
 
     # Softmax
-    exp_w = np.exp(mu_normalized)
+    exp_w = np.exp(mu_normalized - mu_normalized.max())
     weights_softmax = exp_w / exp_w.sum()
 
     rows.append(
