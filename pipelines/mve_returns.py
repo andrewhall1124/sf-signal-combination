@@ -19,7 +19,7 @@ def save_returns_plot(data: pl.DataFrame, signal_name: str):
     plt.xlabel(None)
     plt.ylabel('Cumulative Log Return (%)')
     plt.tight_layout()
-    plt.savefig(f"results/returns/{signal_name}.png")
+    plt.savefig(f"results/mve_returns/{signal_name}.png")
     plt.clf()
 
 start = dt.date(2000, 1, 1)

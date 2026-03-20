@@ -33,6 +33,7 @@ def compute_quantile_returns(signal_expr: pl.Expr, start: dt.date, end: dt.date)
         .with_columns(
             pl.col('signal')
             .qcut(quantiles=10, labels=labels)
+            .over('date')
             .alias('bin')
         )
     )
@@ -41,10 +42,10 @@ def compute_quantile_returns(signal_expr: pl.Expr, start: dt.date, end: dt.date)
         bins
         .group_by('date', 'bin')
         .agg(
-            pl.col('specific_return').mean()
+            pl.col('return').mean()
         )
         .sort('date', 'bin')
-        .pivot(index='date', on='bin', values='specific_return')
+        .pivot(index='date', on='bin', values='return')
         .with_columns(
             pl.col(top_bin).sub(pl.col('0')).alias('spread')
         )
