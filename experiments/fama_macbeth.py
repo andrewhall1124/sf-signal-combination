@@ -191,7 +191,7 @@ save_values_lineplot(
     labels=['Reversal', 'Momentum', 'BAB'],
     file_path=folder_path / "values.png",
     title="Fama-Macbeth",
-    value_name="Gamma"
+    value_name="gamma"
 )
 
 save_values_lineplot(
@@ -200,7 +200,7 @@ save_values_lineplot(
     labels=['Reversal', 'Momentum', 'BAB'],
     file_path=folder_path / "normalized.png",
     title="Fama-Macbeth",
-    value_name="Normalized Gamma"
+    value_name="Normalized gamma"
 )
 
 save_weights_stackplot(

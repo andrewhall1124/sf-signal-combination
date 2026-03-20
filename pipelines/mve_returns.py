@@ -44,7 +44,7 @@ for config in configs:
     print(f"    Volatility (%): {volatility:2%}")
 
     # Save plot
-    file_path = Path(f"results/mve_returns{signal_name}.png")
+    file_path = Path(f"results/mve_returns/{signal_name}.png")
     file_path.parent.mkdir(parents=True, exist_ok=True)
 
     title = {
