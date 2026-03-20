@@ -8,9 +8,8 @@ WINDOW = 252
 K = 3
 
 # Prior hyperparameters
-kappa = 1.0 / WINDOW
 mu_0 = np.ones(K) / K
-Lambda_0 = kappa * np.eye(K)
+Sigma_0 = (1.0 / WINDOW) * np.eye(K)
 
 # Load returns (quantile)
 returns_list = []
@@ -27,20 +26,22 @@ returns = (
     .sort('date')
 )
 
-# Compute signal weights using Bayesian linear regression on a rolling window
+# Compute signal weights using multivariate normal-normal conjugate prior on a rolling window
 dates = returns['date'].to_list()
-R_full = returns.select(signal_names).to_numpy()
+returns_np = returns.select(signal_names).to_numpy()
 
 rows = []
-for t in range(WINDOW, len(R_full)):
-    X = R_full[t - WINDOW : t]
-    y = X.sum(axis=1)
+for t in range(WINDOW, len(returns_np)):
+    X = returns_np[t - WINDOW : t]
+    n = X.shape[0]
+    x_bar = X.mean(axis=0)
+    Sigma = np.cov(X, rowvar=False)
 
-    # Posterior parameters (Normal-Normal conjugate update)
-    XtX = X.T @ X
-    Xty = X.T @ y
-    Lambda_n = Lambda_0 + XtX
-    mu_n = np.linalg.solve(Lambda_n, Lambda_0 @ mu_0 + Xty)
+    # Posterior parameters (multivariate normal conjugate update)
+    Sigma_0_inv = np.linalg.inv(Sigma_0)
+    Sigma_inv = np.linalg.inv(Sigma)
+    Sigma_n = np.linalg.inv(Sigma_0_inv + n * Sigma_inv)
+    mu_n = Sigma_n @ (Sigma_0_inv @ mu_0 + n * Sigma_inv @ x_bar)
 
     # Normalize
     weights = mu_n / mu_n.sum()
