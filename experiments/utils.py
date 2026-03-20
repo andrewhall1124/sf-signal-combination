@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import datetime as dt
 import polars as pl
+import numpy as np
 
 def save_weights_stackplot(dates: list[dt.date], *args, labels: list[str], file_path: str, title: str):
     plt.stackplot(dates, *args, labels=labels)
@@ -32,6 +33,28 @@ def save_values_lineplot(values: pl.DataFrame, columns: list[str], labels: list[
     plt.ylabel(value_name)
     plt.xlabel(None)
     plt.legend(loc="upper right")
+    plt.tight_layout()
+    plt.savefig(file_path)
+    plt.clf()
+
+def save_returns_plot(returns: pl.DataFrame, file_path: str, title: str):
+    cumulative_returns = (
+        returns
+        .with_columns(
+            pl.col('return')
+            .log1p()
+            .cum_sum()
+        )
+    )
+
+    mean_return = returns['return'].mean() * 252
+    volatility = returns['return'].std() * np.sqrt(252)
+    sharpe = mean_return / volatility
+
+    sns.lineplot(cumulative_returns, x='date', y='return')
+    plt.title(f"{title} ({sharpe:.2f})")
+    plt.xlabel(None)
+    plt.ylabel('Cumulative Log Return (%)')
     plt.tight_layout()
     plt.savefig(file_path)
     plt.clf()

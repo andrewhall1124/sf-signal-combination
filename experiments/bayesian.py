@@ -1,6 +1,6 @@
 import polars as pl
 import numpy as np
-from utils import save_weights_lineplot, save_weights_stackplot, save_values_lineplot
+from utils import save_weights_lineplot, save_weights_stackplot, save_values_lineplot, save_returns_plot
 from pathlib import Path
 import datetime as dt
 
@@ -71,9 +71,47 @@ signal_weights = (
     )
 )
 
+returns_long = (
+    returns
+    .unpivot(index='date', variable_name='signal_name', value_name='return')
+    .sort('date', 'signal_name')
+    .with_columns(
+        pl.col('return').shift(-1).over('signal_name')
+    )
+)
+
+signal_weights_long = (
+    signal_weights
+    .unpivot(index='date', on=weight_columns, variable_name='signal_name', value_name='weight')
+    .with_columns(
+        pl.col('signal_name').str.split('_').list.get(1)
+    )
+)
+
+portfolio_returns = (
+    signal_weights_long
+    .join(
+        other=returns_long,
+        on=['date', 'signal_name'],
+        how='left'
+    )
+    .drop_nulls('return')
+    .group_by('date')
+    .agg(
+        pl.col('return').mul(pl.col('weight')).sum()
+    )
+    .sort('date')
+)
+
 # Save results
 folder_path = Path("results/bayesian")
 folder_path.mkdir(exist_ok=True, parents=True)
+
+save_returns_plot(
+    returns=portfolio_returns,
+    file_path=folder_path / "returns.png",
+    title='Bayesian'
+)
 
 save_values_lineplot(
     values=signal_weights,

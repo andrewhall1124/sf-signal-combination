@@ -3,9 +3,10 @@ import datetime as dt
 import polars_ols as pls
 from signals.expr import momentum, reversal, bab
 from signals.utils import get_assets_data
-from experiments.utils import save_weights_lineplot, save_weights_stackplot, save_values_lineplot
+from experiments.utils import save_weights_lineplot, save_weights_stackplot, save_values_lineplot, save_returns_plot
 from pathlib import Path
 
+signal_names = ['reversal', 'momentum', 'bab']
 start = dt.date(2000, 1, 1)
 end = dt.date(2024, 12, 31)
 WINDOW = 252
@@ -94,6 +95,7 @@ gammas = (
 )
 
 span = WINDOW
+weight_columns = [f'w_{name}' for name in signal_names]
 signal_weights = (
     gammas
     .with_columns(
@@ -125,9 +127,63 @@ w_reversal = signal_weights['w_reversal'].to_list()
 w_momentum = signal_weights['w_momentum'].to_list()
 w_bab = signal_weights['w_bab'].to_list()
 
+# Load returns (mve)
+returns_list = []
+for signal_name in signal_names:
+    returns = pl.read_parquet(f"data/mve_returns/{signal_name}.parquet")
+    returns = returns.filter(pl.col('date').is_between(start, end)).sort('date')
+    returns = returns.with_columns(pl.lit(signal_name).alias('name'))
+    returns_list.append(returns)
+
+returns: pl.DataFrame = pl.concat(returns_list)
+returns = (
+    returns
+    .pivot(index='date', on='name', values='return')
+    .drop_nulls()
+    .sort('date')
+)
+
+returns_long = (
+    returns
+    .unpivot(index='date', variable_name='signal_name', value_name='return')
+    .sort('date', 'signal_name')
+    .with_columns(
+        pl.col('return').shift(-2).over('signal_name')
+    )
+)
+
+signal_weights_long = (
+    signal_weights
+    .unpivot(index='date', on=weight_columns, variable_name='signal_name', value_name='weight')
+    .with_columns(
+        pl.col('signal_name').str.split('_').list.get(1)
+    )
+)
+
+portfolio_returns = (
+    signal_weights_long
+    .join(
+        other=returns_long,
+        on=['date', 'signal_name'],
+        how='left'
+    )
+    .drop_nulls('return')
+    .group_by('date')
+    .agg(
+        pl.col('return').mul(pl.col('weight')).sum()
+    )
+    .sort('date')
+)
+
 # Save results
 folder_path = Path("results/fama_macbeth")
 folder_path.mkdir(exist_ok=True, parents=True)
+
+save_returns_plot(
+    returns=portfolio_returns,
+    file_path=folder_path / "returns.png",
+    title='Fama-Macbeth'
+)
 
 save_values_lineplot(
     values=signal_weights,
