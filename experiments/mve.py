@@ -1,6 +1,6 @@
 import polars as pl
 import numpy as np
-from utils import save_lineplot, save_stackplot
+from utils import save_weights_lineplot, save_weights_stackplot, save_values_lineplot
 from pathlib import Path
 import datetime as dt
 
@@ -36,19 +36,20 @@ for t in range(WINDOW, len(R_full)):
     mu = R_window.mean(axis=0)
     Sigma = np.cov(R_window, rowvar=False)
 
-    weights = np.linalg.solve(Sigma, mu)
+    weights_raw = np.linalg.solve(Sigma, mu)
 
     # Normalize
-    weights = weights / weights.sum()
+    weights_normalized = weights_raw / weights_raw.sum()
 
     # Softmax (shift by max for numerical stability)
-    exp_s = np.exp(weights - weights.max())
-    weights = exp_s / exp_s.sum()
+    exp_s = np.exp(weights_normalized - weights_normalized.max())
+    weights_softmax = exp_s / exp_s.sum()
 
     rows.append(
-        {'date': dates[t]}
-        |
-        {f'w_{name}': weights[i] for i, name in enumerate(signal_names)}
+        {'date': dates[t]} |
+        {f'w_raw_{name}': weights_raw[i] for i, name in enumerate(signal_names)} |
+        {f'w_norm_{name}': weights_normalized[i] for i, name in enumerate(signal_names)} |
+        {f'w_{name}': weights_softmax[i] for i, name in enumerate(signal_names)}
     )
 
 # Combine and smooth weights
@@ -65,7 +66,25 @@ signal_weights = (
 folder_path = Path("results/mve")
 folder_path.mkdir(exist_ok=True, parents=True)
 
-save_stackplot(
+save_values_lineplot(
+    values=signal_weights,
+    columns=['w_raw_reversal', 'w_raw_momentum', 'w_raw_bab'],
+    labels=['Reversal', 'Momentum', 'BAB'],
+    file_path=folder_path / "values.png",
+    title="MVE",
+    value_name="Raw Weights"
+)
+
+save_values_lineplot(
+    values=signal_weights,
+    columns=['w_norm_reversal', 'w_norm_momentum', 'w_norm_bab'],
+    labels=['Reversal', 'Momentum', 'BAB'],
+    file_path=folder_path / "normalized.png",
+    title="MVE",
+    value_name="Normalized Weights"
+)
+
+save_weights_stackplot(
     signal_weights['date'],
     signal_weights['w_reversal'],
     signal_weights['w_momentum'],
@@ -75,7 +94,7 @@ save_stackplot(
     title="MVE",
 )
 
-save_lineplot(
+save_weights_lineplot(
     weights=signal_weights,
     columns=['w_reversal', 'w_momentum', 'w_bab'],
     labels=['Reversal', 'Momentum', 'BAB'],

@@ -1,6 +1,6 @@
 import polars as pl
 import numpy as np
-from utils import save_lineplot, save_stackplot
+from utils import save_weights_lineplot, save_weights_stackplot, save_values_lineplot
 from pathlib import Path
 import datetime as dt
 
@@ -47,25 +47,27 @@ for t in range(WINDOW, len(returns_np)):
     mu_n = Sigma_n @ (Sigma_0_inv @ mu_0 + n * Sigma_inv @ x_bar)
 
     # Normalize
-    weights = mu_n / mu_n.sum()
+    mu_normalized = mu_n / mu_n.sum()
 
     # Softmax
-    exp_w = np.exp(weights)
-    weights = exp_w / exp_w.sum()
+    exp_w = np.exp(mu_normalized)
+    weights_softmax = exp_w / exp_w.sum()
 
     rows.append(
-        {'date': dates[t]}
-        |
-        {f'w_{name}': weights[i] for i, name in enumerate(signal_names)}
+        {'date': dates[t]} |
+        {f"mu_{name}": mu_n[i] for i, name in enumerate(signal_names)} |
+        {f"mu_norm_{name}": mu_normalized[i] for i, name in enumerate(signal_names)} |
+        {f'w_{name}': weights_softmax[i] for i, name in enumerate(signal_names)}
     )
 
 # Combine and smooth weights
+weight_columns = [f'w_{name}' for name in signal_names]
 signal_weights = pl.DataFrame(rows)
 signal_weights = (
     signal_weights
     .sort('date')
     .with_columns(
-        pl.exclude('date').ewm_mean(span=WINDOW)
+        pl.col(weight_columns).ewm_mean(span=WINDOW)
     )
 )
 
@@ -73,7 +75,25 @@ signal_weights = (
 folder_path = Path("results/bayesian")
 folder_path.mkdir(exist_ok=True, parents=True)
 
-save_stackplot(
+save_values_lineplot(
+    values=signal_weights,
+    columns=['mu_reversal', 'mu_momentum', 'mu_bab'],
+    labels=['Reversal', 'Momentum', 'BAB'],
+    file_path=folder_path / "values.png",
+    title="Bayesian",
+    value_name="mu"
+)
+
+save_values_lineplot(
+    values=signal_weights,
+    columns=['mu_norm_reversal', 'mu_norm_momentum', 'mu_norm_bab'],
+    labels=['Reversal', 'Momentum', 'BAB'],
+    file_path=folder_path / "normalized.png",
+    title="Bayesian",
+    value_name="Normalized mu"
+)
+
+save_weights_stackplot(
     signal_weights['date'],
     signal_weights['w_reversal'],
     signal_weights['w_momentum'],
@@ -83,7 +103,7 @@ save_stackplot(
     title="Bayesian",
 )
 
-save_lineplot(
+save_weights_lineplot(
     weights=signal_weights,
     columns=['w_reversal', 'w_momentum', 'w_bab'],
     labels=['Reversal', 'Momentum', 'BAB'],

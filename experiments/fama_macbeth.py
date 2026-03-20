@@ -3,7 +3,7 @@ import datetime as dt
 import polars_ols as pls
 from signals.expr import momentum, reversal, bab
 from signals.utils import get_assets_data
-from experiments.utils import save_lineplot, save_stackplot
+from experiments.utils import save_weights_lineplot, save_weights_stackplot, save_values_lineplot
 from pathlib import Path
 
 start = dt.date(2000, 1, 1)
@@ -97,14 +97,14 @@ span = WINDOW
 signal_weights = (
     gammas
     .with_columns(
-        w_momentum=pl.col('g_momentum') / pl.sum_horizontal('g_momentum', 'g_reversal', 'g_bab'),
-        w_reversal=pl.col('g_reversal') / pl.sum_horizontal('g_momentum', 'g_reversal', 'g_bab'),
-        w_bab=pl.col('g_bab') / pl.sum_horizontal('g_momentum', 'g_reversal', 'g_bab'),
+        g_norm_momentum=pl.col('g_momentum') / pl.sum_horizontal('g_momentum', 'g_reversal', 'g_bab'),
+        g_norm_reversal=pl.col('g_reversal') / pl.sum_horizontal('g_momentum', 'g_reversal', 'g_bab'),
+        g_norm_bab=pl.col('g_bab') / pl.sum_horizontal('g_momentum', 'g_reversal', 'g_bab'),
     )
     .with_columns(
-        e_mom=pl.col('w_momentum').exp(),
-        e_rev=pl.col('w_reversal').exp(),
-        e_bab=pl.col('w_bab').exp(),
+        e_mom=pl.col('g_norm_momentum').exp(),
+        e_rev=pl.col('g_norm_reversal').exp(),
+        e_bab=pl.col('g_norm_bab').exp(),
     )
     .with_columns(
         w_momentum=pl.col('e_mom') / pl.sum_horizontal('e_mom', 'e_rev', 'e_bab'),
@@ -129,7 +129,25 @@ w_bab = signal_weights['w_bab'].to_list()
 folder_path = Path("results/fama_macbeth")
 folder_path.mkdir(exist_ok=True, parents=True)
 
-save_stackplot(
+save_values_lineplot(
+    values=signal_weights,
+    columns=['g_reversal', 'g_momentum', 'g_bab'],
+    labels=['Reversal', 'Momentum', 'BAB'],
+    file_path=folder_path / "values.png",
+    title="Fama-Macbeth",
+    value_name="Gamma"
+)
+
+save_values_lineplot(
+    values=signal_weights,
+    columns=['g_norm_reversal', 'g_norm_momentum', 'g_norm_bab'],
+    labels=['Reversal', 'Momentum', 'BAB'],
+    file_path=folder_path / "normalized.png",
+    title="Fama-Macbeth",
+    value_name="Normalized Gamma"
+)
+
+save_weights_stackplot(
     dates,
     w_reversal,
     w_momentum,
@@ -139,7 +157,7 @@ save_stackplot(
     title="Fama Macbeth"
 )
 
-save_lineplot(
+save_weights_lineplot(
     weights=signal_weights,
     columns=['w_reversal', 'w_momentum', 'w_bab'],
     labels=['Reversal', 'Momentum', 'BAB'],
