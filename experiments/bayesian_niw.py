@@ -10,9 +10,11 @@ end = dt.date(2024, 12, 31)
 WINDOW = 252
 K = 3
 
-# Prior hyperparameters
-mu_0 = np.ones(K) / K
-Sigma_0 = (1.0 / WINDOW) * np.eye(K)
+# NIW prior hyperparameters
+mu_0 = np.ones(K) / K                      # prior mean
+kappa_0 = 1.0                               # prior strength on mean
+nu_0 = K + 2                                # prior degrees of freedom (> K+1 for E[Sigma] to exist)
+Psi_0 = (1.0 / WINDOW) * np.eye(K)         # prior scale matrix
 
 # Load returns (mve)
 returns_list = []
@@ -29,7 +31,7 @@ returns = (
     .sort('date')
 )
 
-# Compute signal weights using multivariate normal-normal conjugate prior on a rolling window
+# Compute signal weights using Normal-Inverse-Wishart conjugate prior on a rolling window
 dates = returns['date'].to_list()
 returns_np = returns.select(signal_names).to_numpy()
 
@@ -40,23 +42,31 @@ for t in range(WINDOW, len(returns_np)):
     x_bar = X.mean(axis=0)
     Sigma = np.cov(X, rowvar=False)
 
-    # Posterior parameters (multivariate normal conjugate update)
-    Sigma_0_inv = np.linalg.inv(Sigma_0)
-    Sigma_inv = np.linalg.inv(Sigma)
-    Sigma_n = np.linalg.inv(Sigma_0_inv + n * Sigma_inv)
-    mu_n = Sigma_n @ (Sigma_0_inv @ mu_0 + n * Sigma_inv @ x_bar)
+    # NIW posterior update
+    kappa_n = kappa_0 + n
+    nu_n = nu_0 + n
+    mu_n = (kappa_0 * mu_0 + n * x_bar) / kappa_n
+
+    S = (n - 1) * Sigma
+    diff = (x_bar - mu_0).reshape(-1, 1)
+    Psi_n = Psi_0 + S + (kappa_0 * n / kappa_n) * (diff @ diff.T)
+
+    # Posterior mean of covariance
+    Sigma_post = Psi_n / (nu_n - K - 1)
+
+    weights_raw = np.linalg.solve(Sigma_post, mu_n)
 
     # Normalize
-    mu_normalized = mu_n / mu_n.sum()
+    weights_norm = weights_raw / weights_raw.sum()
 
     # Softmax
-    exp_w = np.exp(mu_normalized - mu_normalized.max())
+    exp_w = np.exp(weights_norm - weights_norm.max())
     weights_softmax = exp_w / exp_w.sum()
 
     rows.append(
         {'date': dates[t]} |
-        {f"mu_{name}": mu_n[i] for i, name in enumerate(signal_names)} |
-        {f"mu_norm_{name}": mu_normalized[i] for i, name in enumerate(signal_names)} |
+        {f"w_raw_{name}": mu_n[i] for i, name in enumerate(signal_names)} |
+        {f"w_norm_{name}": weights_norm[i] for i, name in enumerate(signal_names)} |
         {f'w_{name}': weights_softmax[i] for i, name in enumerate(signal_names)}
     )
 
@@ -104,31 +114,31 @@ portfolio_returns = (
 )
 
 # Save results
-folder_path = Path("results/bayesian")
+folder_path = Path("results/bayesian_niw")
 folder_path.mkdir(exist_ok=True, parents=True)
 
 save_returns_plot(
     returns=portfolio_returns,
     file_path=folder_path / "returns.png",
-    title='Bayesian'
+    title='Bayesian NIW'
 )
 
 save_values_lineplot(
     values=signal_weights,
-    columns=['mu_reversal', 'mu_momentum', 'mu_bab'],
+    columns=['w_raw_reversal', 'w_raw_momentum', 'w_raw_bab'],
     labels=['Reversal', 'Momentum', 'BAB'],
     file_path=folder_path / "values.png",
-    title="Bayesian",
-    value_name="mu"
+    title="Bayesian NIW",
+    value_name="Raw Weights"
 )
 
 save_values_lineplot(
     values=signal_weights,
-    columns=['mu_norm_reversal', 'mu_norm_momentum', 'mu_norm_bab'],
+    columns=['w_norm_reversal', 'w_norm_momentum', 'w_norm_bab'],
     labels=['Reversal', 'Momentum', 'BAB'],
     file_path=folder_path / "normalized.png",
-    title="Bayesian",
-    value_name="Normalized mu"
+    title="Bayesian NIW",
+    value_name="Normalized Weights"
 )
 
 save_weights_stackplot(
@@ -138,7 +148,7 @@ save_weights_stackplot(
     signal_weights['w_bab'],
     labels=['Reversal', 'Momentum', 'BAB'],
     file_path=folder_path / "stackplot.png",
-    title="Bayesian",
+    title="Bayesian NIW",
 )
 
 save_weights_lineplot(
@@ -146,5 +156,5 @@ save_weights_lineplot(
     columns=['w_reversal', 'w_momentum', 'w_bab'],
     labels=['Reversal', 'Momentum', 'BAB'],
     file_path=folder_path / "lineplot.png",
-    title="Bayesian",
+    title="Bayesian NIW",
 )
