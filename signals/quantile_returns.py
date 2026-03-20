@@ -13,6 +13,10 @@ def compute_quantile_returns(signal_expr: pl.Expr, start: dt.date, end: dt.date)
         .with_columns(
             signal=signal_expr
         )
+        .with_columns(
+            pl.col('signal').shift(1).over('barrid'),
+            pl.col('price').shift(1).over('barrid')
+        )
     )
 
     filtered = (
@@ -20,7 +24,7 @@ def compute_quantile_returns(signal_expr: pl.Expr, start: dt.date, end: dt.date)
         .sort('date', 'barrid')
         .filter(
             pl.col('signal').is_not_null(),
-            pl.col('price').shift(1).over('barrid').gt(5)
+            pl.col('price').gt(5)
         )
         .sort('date', 'barrid')
     )
@@ -42,10 +46,10 @@ def compute_quantile_returns(signal_expr: pl.Expr, start: dt.date, end: dt.date)
         bins
         .group_by('date', 'bin')
         .agg(
-            pl.col('return').mean()
+            pl.col('specific_return').mean()
         )
         .sort('date', 'bin')
-        .pivot(index='date', on='bin', values='return')
+        .pivot(index='date', on='bin', values='specific_return')
         .with_columns(
             pl.col(top_bin).sub(pl.col('0')).alias('spread')
         )
