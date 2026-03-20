@@ -2,8 +2,11 @@ import polars as pl
 import numpy as np
 from utils import save_lineplot, save_stackplot
 from pathlib import Path
+import datetime as dt
 
 signal_names = ['reversal', 'momentum', 'bab']
+start = dt.date(2001, 1, 1)
+end = dt.date(2024, 12, 31)
 WINDOW = 252
 K = 3
 
@@ -11,10 +14,11 @@ K = 3
 mu_0 = np.ones(K) / K
 Sigma_0 = (1.0 / WINDOW) * np.eye(K)
 
-# Load returns (quantile)
+# Load returns (mve)
 returns_list = []
 for signal_name in signal_names:
-    returns = pl.read_parquet(f"data/quantile_returns/{signal_name}.parquet")
+    returns = pl.read_parquet(f"data/mve_returns/{signal_name}.parquet")
+    returns = returns.filter(pl.col('date').is_between(start, end)).sort('date')
     returns = returns.with_columns(pl.lit(signal_name).alias('name'))
     returns_list.append(returns)
 
@@ -22,7 +26,6 @@ returns: pl.DataFrame = pl.concat(returns_list)
 returns = (
     returns
     .pivot(index='date', on='name', values='return')
-    .drop_nulls()
     .sort('date')
 )
 
