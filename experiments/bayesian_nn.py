@@ -12,7 +12,7 @@ K = 3
 
 # Prior hyperparameters
 mu_0 = np.ones(K) / K
-n_0 = 1 # Pseudo observations
+n_0 = 252 # Pseudo observations
 daily_variance = 1 / 100
 Sigma_0 = (1.0 / n_0) * np.eye(K) * daily_variance
 
@@ -48,12 +48,10 @@ for t in range(WINDOW, len(returns_np)):
     Sigma_n = np.linalg.inv(Sigma_0_inv + n * Sigma_inv)
     mu_n = Sigma_n @ (Sigma_0_inv @ mu_0 + n * Sigma_inv @ x_bar)
 
-    print(Sigma - Sigma_0)
-
     weights_raw = np.linalg.solve(Sigma_n, mu_n)
 
     # Normalize
-    weights_normalized = weights_raw / weights_raw.sum()
+    weights_normalized = weights_raw / np.abs(weights_raw).sum()
 
     # Softmax
     exp_w = np.exp(weights_normalized - weights_normalized.max())

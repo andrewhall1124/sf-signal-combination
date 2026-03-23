@@ -99,6 +99,11 @@ weight_columns = [f'w_{name}' for name in signal_names]
 signal_weights = (
     gammas
     .with_columns(
+        g_momentum=pl.col('g_momentum').abs(),
+        g_reversal=pl.col('g_reversal').abs(),
+        g_bab=pl.col('g_bab').abs(),
+    )
+    .with_columns(
         g_norm_momentum=pl.col('g_momentum') / pl.sum_horizontal('g_momentum', 'g_reversal', 'g_bab'),
         g_norm_reversal=pl.col('g_reversal') / pl.sum_horizontal('g_momentum', 'g_reversal', 'g_bab'),
         g_norm_bab=pl.col('g_bab') / pl.sum_horizontal('g_momentum', 'g_reversal', 'g_bab'),

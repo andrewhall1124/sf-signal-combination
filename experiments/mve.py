@@ -39,7 +39,7 @@ for t in range(WINDOW, len(R_full)):
     weights_raw = np.linalg.solve(Sigma, mu)
 
     # Normalize
-    weights_normalized = weights_raw / weights_raw.sum()
+    weights_normalized = weights_raw / np.abs(weights_raw).sum()
 
     # Softmax (shift by max for numerical stability)
     exp_s = np.exp(weights_normalized - weights_normalized.max())
