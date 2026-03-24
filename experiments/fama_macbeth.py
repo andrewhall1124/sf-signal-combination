@@ -9,7 +9,8 @@ from pathlib import Path
 signal_names = ['reversal', 'momentum', 'bab']
 start = dt.date(2000, 1, 1)
 end = dt.date(2024, 12, 31)
-WINDOW = 252
+plot_start = dt.date(2006, 1, 9)
+WINDOW = 252 * 5
 
 assets = get_assets_data(start, end)
 
@@ -123,6 +124,10 @@ signal_weights = (
         w_momentum=pl.col('w_momentum').ewm_mean(span=span),
         w_reversal=pl.col('w_reversal').ewm_mean(span=span),
         w_bab=pl.col('w_bab').ewm_mean(span=span)
+    )
+    .sort('date')
+    .filter(
+        pl.col('date').ge(plot_start)
     )
     .sort('date')
 )

@@ -7,7 +7,8 @@ import datetime as dt
 signal_names = ['reversal', 'momentum', 'bab']
 start = dt.date(2001, 1, 1)
 end = dt.date(2024, 12, 31)
-WINDOW = 252
+plot_start = dt.date(2006, 1, 9)
+WINDOW = 252 * 5
 
 # Load returns (mve)
 returns_list = []
@@ -59,8 +60,12 @@ signal_weights = (
     signal_weights
     .sort('date')
     .with_columns(
-        pl.col(weight_columns).ewm_mean(span=WINDOW)
+        pl.col(weight_columns).ewm_mean(span=252)
     )
+    .filter(
+        pl.col('date').ge(plot_start)
+    )
+    .sort('date')
 )
 
 returns_long = (
