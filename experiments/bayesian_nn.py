@@ -13,7 +13,7 @@ K = 3
 
 # Prior hyperparameters
 mu_0 = np.ones(K) / K
-n_0 = 252 # Pseudo observations
+n_0 = 252 * 5 # Pseudo observations
 Sigma_0 = np.eye(K) * (1 / 100) # Diagonal 1% variance
 
 # Load returns (mve)
@@ -45,7 +45,7 @@ for t in range(WINDOW, len(returns_np)):
     # Posterior parameters (multivariate normal conjugate update)
     Sigma_0_inv = np.linalg.inv(Sigma_0)
     Sigma_inv = np.linalg.inv(Sigma)
-    Sigma_n = np.linalg.inv(Sigma_0_inv + n * Sigma_inv)
+    Sigma_n = np.linalg.inv(n_0 * Sigma_0_inv + n * Sigma_inv)
     mu_n = Sigma_n @ (n_0 * Sigma_0_inv @ mu_0 + n * Sigma_inv @ x_bar)
 
     weights_raw = np.linalg.solve(Sigma_n, mu_n)
