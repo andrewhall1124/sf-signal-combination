@@ -4,17 +4,23 @@ from utils import save_weights_lineplot, save_weights_stackplot, save_values_lin
 from pathlib import Path
 import datetime as dt
 
-signal_names = ['reversal', 'momentum', 'bab']
-start = dt.date(2001, 1, 1)
-end = dt.date(2024, 12, 31)
-plot_start = dt.date(2006, 1, 9)
+DAILY_VAR = 1e-5
 WINDOW = 252 * 5
 K = 3
 
-# Prior hyperparameters
-mu_0 = np.ones(K) / K
-n_0 = 252 * 5 # Pseudo observations
-Sigma_0 = np.eye(K) * (1 / 100) # Diagonal 1% variance
+# Signals + Priors
+signal_names = ['reversal', 'momentum', 'bab']
+prior_sharpes = [.5, .5, .5] # CHANGE THIS LINE (Annual)
+n_0 = 252 * 5 # CHANGE THIS LINE (Pseudo observations). Note that this is relative to the value for WINDOW
+
+# Dates
+start = dt.date(2001, 1, 1)
+end = dt.date(2024, 12, 31)
+plot_start = dt.date(2006, 1, 9)
+
+# Prior hyperparameters (do not change these)
+mu_0 = np.array(prior_sharpes) * np.sqrt(DAILY_VAR) / np.sqrt(252) # Daily returns
+Sigma_0 = np.eye(K) * DAILY_VAR  # Diagonal daily variance
 
 # Load returns (mve)
 returns_list = []
